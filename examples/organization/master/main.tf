@@ -25,6 +25,7 @@ resource "aws_organizations_organization" "org" {
     "access-analyzer.amazonaws.com",
     "cloudtrail.amazonaws.com",
     "config.amazonaws.com",
+    "securityhub.amazonaws.com"
   ]
   feature_set = "ALL"
 }
