@@ -52,7 +52,10 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "access_log" {
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "access_log" {
-  count = var.lifecycle_glacier_transition_days > 0 ? 1 : 0
+  count = (var.lifecycle_glacier_transition_days > 0 || 
+          var.lifecycle_standard_ia_transition_days > 0 || 
+          var.lifecycle_onezone_ia_transition_days > 0 || 
+          var.lifecycle_expiration_days > 0) ? 1 : 0
 
   bucket = aws_s3_bucket.access_log.id
 
@@ -62,9 +65,39 @@ resource "aws_s3_bucket_lifecycle_configuration" "access_log" {
 
     filter {}
 
-    transition {
-      days          = var.lifecycle_glacier_transition_days
-      storage_class = "GLACIER"
+    # Transition to Standard IA
+    dynamic "transition" {
+      for_each = var.lifecycle_standard_ia_transition_days > 0 ? [1] : []
+      content {
+        days          = var.lifecycle_standard_ia_transition_days
+        storage_class = "STANDARD_IA"
+      }
+    }
+
+    # Transition to OneZone IA
+    dynamic "transition" {
+      for_each = var.lifecycle_onezone_ia_transition_days > 0 ? [1] : []
+      content {
+        days          = var.lifecycle_onezone_ia_transition_days
+        storage_class = "ONEZONE_IA"
+      }
+    }
+
+    # Transition to Glacier
+    dynamic "transition" {
+      for_each = var.lifecycle_glacier_transition_days > 0 ? [1] : []
+      content {
+        days          = var.lifecycle_glacier_transition_days
+        storage_class = "GLACIER"
+      }
+    }
+
+    # Expiration
+    dynamic "expiration" {
+      for_each = var.lifecycle_expiration_days > 0 ? [1] : []
+      content {
+        days = var.lifecycle_expiration_days
+      }
     }
   }
 }
@@ -133,7 +166,10 @@ resource "aws_s3_bucket_logging" "content" {
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "content" {
-  count = var.lifecycle_glacier_transition_days > 0 ? 1 : 0
+  count = (var.lifecycle_glacier_transition_days > 0 || 
+          var.lifecycle_standard_ia_transition_days > 0 || 
+          var.lifecycle_onezone_ia_transition_days > 0 || 
+          var.lifecycle_expiration_days > 0) ? 1 : 0
 
   bucket = aws_s3_bucket.content.id
 
@@ -143,14 +179,28 @@ resource "aws_s3_bucket_lifecycle_configuration" "content" {
 
     filter {}
 
-    transition {
-      days          = var.lifecycle_glacier_transition_days
-      storage_class = "GLACIER"
+    # Transition to Standard IA, OneZone IA, Glacier
+    dynamic "transition" {
+      for_each = {
+        for k, v in {
+          "GLACIER" = var.lifecycle_glacier_transition_days
+          "STANDARD_IA" = var.lifecycle_standard_ia_transition_days
+          "ONEZONE_IA" = var.lifecycle_onezone_ia_transition_days
+        } : k => v if v > 0
+      }
+
+      content {
+        days          = transition.value
+        storage_class = transition.key
+      }
     }
 
-    noncurrent_version_transition {
-      noncurrent_days = var.lifecycle_glacier_transition_days
-      storage_class   = "GLACIER"
+    # Expiration
+    dynamic "expiration" {
+      for_each = var.lifecycle_expiration_days > 0 ? [1] : []
+      content {
+        days = var.lifecycle_expiration_days
+      }
     }
   }
 }
