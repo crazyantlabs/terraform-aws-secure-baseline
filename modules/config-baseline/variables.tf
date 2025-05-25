@@ -50,6 +50,12 @@ variable "include_global_resource_types" {
   default     = true
 }
 
+variable "exclusion_by_resource_types" {
+  description = "Specifies the resource types to exclude from the configuration recorder."
+  type        = list(string)
+  default     = []
+}
+
 variable "tags" {
   description = "Specifies object tags key and value. This applies to all resources created by this module."
   type        = map(string)

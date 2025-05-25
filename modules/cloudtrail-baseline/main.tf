@@ -1,3 +1,11 @@
+data "aws_organizations_organization" "org" {
+  count = var.is_organization_trail ? 1 : 0
+}
+
+locals {
+  management_account_id = var.is_organization_trail ? data.aws_organizations_organization.org[0].master_account_id : var.aws_account_id
+}
+
 # --------------------------------------------------------------------------------------------------
 # CloudWatch Logs group to accept CloudTrail event stream.
 # --------------------------------------------------------------------------------------------------
@@ -88,7 +96,7 @@ data "aws_iam_policy_document" "cloudtrail_key_policy" {
     condition {
       test     = "StringLike"
       variable = "kms:EncryptionContext:aws:cloudtrail:arn"
-      values   = ["arn:aws:cloudtrail:*:${var.aws_account_id}:trail/*"]
+      values   = ["arn:aws:cloudtrail:*:${local.management_account_id}:trail/${var.cloudtrail_name}"]
     }
   }
 
@@ -121,7 +129,7 @@ data "aws_iam_policy_document" "cloudtrail_key_policy" {
     condition {
       test     = "StringLike"
       variable = "kms:EncryptionContext:aws:cloudtrail:arn"
-      values   = ["arn:aws:cloudtrail:*:${var.aws_account_id}:trail/*"]
+      values   = ["arn:aws:cloudtrail:*:${local.management_account_id}:trail/${var.cloudtrail_name}"]
     }
   }
 
@@ -164,7 +172,7 @@ data "aws_iam_policy_document" "cloudtrail_key_policy" {
     condition {
       test     = "StringLike"
       variable = "kms:EncryptionContext:aws:cloudtrail:arn"
-      values   = ["arn:aws:cloudtrail:*:${var.aws_account_id}:trail/*"]
+      values   = ["arn:aws:cloudtrail:*:${local.management_account_id}:trail/${var.cloudtrail_name}"]
     }
   }
 
@@ -186,10 +194,15 @@ data "aws_iam_policy_document" "cloudtrail_key_policy" {
 resource "aws_kms_key" "cloudtrail" {
   description             = "A KMS key to encrypt CloudTrail events."
   deletion_window_in_days = var.key_deletion_window_in_days
-  enable_key_rotation     = "true"
+  enable_key_rotation     = true
   policy                  = data.aws_iam_policy_document.cloudtrail_key_policy.json
 
   tags = var.tags
+}
+
+resource "aws_kms_alias" "cloudtrail" {
+  name          = "alias/${var.cloudtrail_name}"
+  target_key_id = aws_kms_key.cloudtrail.id
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -242,30 +255,39 @@ resource "aws_cloudtrail" "global" {
   s3_key_prefix                 = var.s3_key_prefix
   sns_topic_name                = var.cloudtrail_sns_topic_enabled ? aws_sns_topic.cloudtrail-sns-topic[0].arn : null
 
-  event_selector {
-    read_write_type           = "All"
-    include_management_events = true
+  advanced_event_selector {
+    name = "Log readOnly and writeOnly management events"
 
-    data_resource {
-      type   = "AWS::S3::Object"
-      values = var.s3_object_level_logging_buckets
+    field_selector {
+      field  = "eventCategory"
+      equals = ["Management"]
     }
   }
 
-  event_selector {
-    read_write_type           = "All"
-    include_management_events = true
+  # event_selector {
+  #   read_write_type           = "All"
+  #   include_management_events = true
 
-    data_resource {
-      type   = "AWS::DynamoDB::Table"
-      values = var.dynamodb_event_logging_tables
-    }
+  #   data_resource {
+  #     type   = "AWS::S3::Object"
+  #     values = var.s3_object_level_logging_buckets
+  #   }
+  # }
 
-    data_resource {
-      type   = "AWS::Lambda::Function"
-      values = var.lambda_invocation_logging_lambdas
-    }
-  }
+  # event_selector {
+  #   read_write_type           = "All"
+  #   include_management_events = true
+
+  #   data_resource {
+  #     type   = "AWS::DynamoDB::Table"
+  #     values = var.dynamodb_event_logging_tables
+  #   }
+
+  #   data_resource {
+  #     type   = "AWS::Lambda::Function"
+  #     values = var.lambda_invocation_logging_lambdas
+  #   }
+  # }
 
   insight_selector {
     insight_type = "ApiCallRateInsight"

@@ -14,6 +14,24 @@ variable "lifecycle_glacier_transition_days" {
   default     = 0
 }
 
+variable "lifecycle_expiration_days" {
+  description = "The number of days after object creation when the object is expired. Setting to zero disables the expiration."
+  type        = number
+  default     = 0
+}
+
+variable "lifecycle_standard_ia_transition_days" {
+  description = "The number of days after object creation when the object is transitioned to Standard IA. Setting to zero disables the transition."
+  type        = number
+  default     = 0
+}
+
+variable "lifecycle_onezone_ia_transition_days" {
+  description = "The number of days after object creation when the object is transitioned to OneZone IA. Setting to zero disables the transition."
+  type        = number
+  default     = 0
+}
+
 variable "force_destroy" {
   description = " A boolean that indicates all objects should be deleted from the bucket so that the bucket can be destroyed without error. These objects are not recoverable."
   type        = bool

@@ -297,3 +297,37 @@ module "guardduty_baseline_us-west-2" {
 
   tags = var.tags
 }
+
+module "guardduty_baseline_il-central-1" {
+  count  = contains(var.target_regions, "il-central-1") && var.guardduty_enabled ? 1 : 0
+  source = "./modules/guardduty-baseline"
+
+  providers = {
+    aws = aws.il-central-1
+  }
+
+  disable_email_notification   = var.guardduty_disable_email_notification
+  finding_publishing_frequency = var.guardduty_finding_publishing_frequency
+  invitation_message           = var.guardduty_invitation_message
+  master_account_id            = local.guardduty_master_account_id
+  member_accounts              = local.guardduty_member_accounts
+
+  tags = var.tags
+}
+
+module "guardduty_baseline_me-central-1" {
+  count  = contains(var.target_regions, "me-central-1") && var.guardduty_enabled ? 1 : 0
+  source = "./modules/guardduty-baseline"
+
+  providers = {
+    aws = aws.me-central-1
+  }
+
+  disable_email_notification   = var.guardduty_disable_email_notification
+  finding_publishing_frequency = var.guardduty_finding_publishing_frequency
+  invitation_message           = var.guardduty_invitation_message
+  master_account_id            = local.guardduty_master_account_id
+  member_accounts              = local.guardduty_member_accounts
+
+  tags = var.tags
+}

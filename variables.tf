@@ -105,6 +105,24 @@ variable "audit_log_lifecycle_glacier_transition_days" {
   default     = 0
 }
 
+variable "audit_log_lifecycle_standard_ia_transition_days" {
+  description = "The number of days after log creation when the log file is transitioned to Standard IA. Setting to zero disables the transition."
+  type        = number
+  default     = 0
+}
+
+variable "audit_log_lifecycle_onezone_ia_transition_days" {
+  description = "The number of days after log creation when the log file is transitioned to OneZone IA. Setting to zero disables the transition."
+  type        = number
+  default     = 0
+}
+
+variable "audit_log_lifecycle_expiration_days" {
+  description = "The number of days after log creation when the log file is expired. Setting to zero disables the expiration."
+  type        = number
+  default     = 0
+} 
+
 variable "audit_log_bucket_force_destroy" {
   description = "A boolean that indicates all objects should be deleted from the audit log bucket so that the bucket can be destroyed without error. These objects are not recoverable."
   type        = bool
@@ -256,7 +274,6 @@ variable "vpc_flow_logs_s3_key_prefix" {
   default     = "flow-logs"
 }
 
-
 # --------------------------------------------------------------------------------------------------
 # Variables for config-baseline module.
 # --------------------------------------------------------------------------------------------------
@@ -319,6 +336,12 @@ variable "config_global_resources_all_regions" {
   description = "Record global resources in all regions. If false, only default region will record global resources."
   type        = bool
   default     = false
+}
+
+variable "config_exclusion_by_resource_types" {
+  description = "Specifies the resource types to exclude from the configuration recorder."
+  type        = list(string)
+  default     = []
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -650,3 +673,38 @@ variable "analyzer_name" {
   type        = string
   default     = "default-analyzer"
 }
+
+# --------------------------------------------------------------------------------------------------
+# Variables for backup-baseline module.
+# --------------------------------------------------------------------------------------------------
+
+variable "backup_baseline_enabled" {
+  description = "Boolean whether backup-baseline is enabled."
+  type        = bool
+  default     = true
+}
+
+variable "backup_report_plan_name" {
+  description = "The name of the backup report plan."
+  type        = string
+  default     = "backup-report-plan"
+}
+
+variable "backup_report_plan_description" {
+  description = "The description of the backup report plan."
+  type        = string
+  default     = "Backup report plan"
+}
+
+variable "backup_s3_key_prefix" {
+  description = "The prefix used when Backup Report delivers logs to the S3 bucket."
+  type        = string
+  default     = "backup"
+}
+
+variable "backup_regions" {
+  description = "The regions to enable backup for."
+  type        = list(string)
+  default     = []
+}
+

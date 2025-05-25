@@ -1,8 +1,8 @@
-# analyzer-baseline
+# backup-baseline
 
 ## Features
 
-- Enable IAM Access Analyzer
+- Enable AWS Backup Report Delivery to S3
 
 <!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
 ## Requirements
@@ -22,7 +22,7 @@
 
 | Name | Description | Type | Required |
 |------|-------------|------|:--------:|
-| <a name="input_analyzer_name"></a> [analyzer\_name](#input\_analyzer\_name) | The name for the IAM Access Analyzer resource to be created. | `string` | no |
+| <a name="input_s3_bucket_name"></a> [s3\_bucket\_name](#input\_s3\_bucket\_name) | The name of the S3 bucket to deliver the backup report to.. | `string` | no |
 | <a name="input_is_organization"></a> [is\_organization](#input\_is\_organization) | The boolean flag whether this module is configured for the organization master account or the individual account. | `bool` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Specifies object tags key and value. This applies to all resources created by this module. | `map(string)` | no |
 

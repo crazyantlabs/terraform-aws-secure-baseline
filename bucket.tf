@@ -11,6 +11,9 @@ locals {
   audit_log_cloudtrail_destination = join("/", [local.audit_log_bucket_arn, trim(var.cloudtrail_s3_key_prefix, "/")])
   audit_log_config_destination     = join("/", [local.audit_log_bucket_arn, trim(var.config_s3_bucket_key_prefix, "/")])
   audit_log_flow_logs_destination  = join("/", [local.audit_log_bucket_arn, trim(var.vpc_flow_logs_s3_key_prefix, "/")])
+  audit_log_backup_report_destination  = join("/", [local.audit_log_bucket_arn, trim(var.backup_s3_key_prefix, "/")])
+
+  management_account_id = local.is_individual_account ? var.aws_account_id : data.aws_organizations_organization.org[0].master_account_id
 }
 
 # --------------------------------------------------------------------------------------------------
@@ -34,11 +37,14 @@ module "audit_log_bucket" {
   count  = local.use_external_bucket ? 0 : 1
   source = "./modules/secure-bucket"
 
-  bucket_name                       = var.audit_log_bucket_name
-  bucket_key_enabled                = var.audit_log_bucket_key_enabled
-  log_bucket_name                   = var.audit_log_bucket_access_logs_name != "" ? var.audit_log_bucket_access_logs_name : "${var.audit_log_bucket_name}-access-logs"
-  lifecycle_glacier_transition_days = var.audit_log_lifecycle_glacier_transition_days
-  force_destroy                     = var.audit_log_bucket_force_destroy
+  bucket_name                           = var.audit_log_bucket_name
+  bucket_key_enabled                    = var.audit_log_bucket_key_enabled
+  log_bucket_name                       = var.audit_log_bucket_access_logs_name != "" ? var.audit_log_bucket_access_logs_name : "${var.audit_log_bucket_name}-access-logs"
+  lifecycle_glacier_transition_days     = var.audit_log_lifecycle_glacier_transition_days
+  lifecycle_onezone_ia_transition_days  = var.audit_log_lifecycle_onezone_ia_transition_days
+  lifecycle_standard_ia_transition_days = var.audit_log_lifecycle_standard_ia_transition_days
+  lifecycle_expiration_days             = var.audit_log_lifecycle_expiration_days
+  force_destroy                         = var.audit_log_bucket_force_destroy
 
   tags = var.tags
 
@@ -66,6 +72,7 @@ data "aws_iam_policy_document" "audit_log_base" {
       variable = "aws:SecureTransport"
       values   = ["false"]
     }
+
     principals {
       type        = "*"
       identifiers = ["*"]
@@ -97,9 +104,12 @@ data "aws_iam_policy_document" "audit_log_cloud_trail" {
       type        = "Service"
       identifiers = ["cloudtrail.amazonaws.com"]
     }
+    # Include the management account and member accounts in the resource list
     resources = concat(
+      ["${local.audit_log_cloudtrail_destination}/AWSLogs/${local.management_account_id}/*"],
       ["${local.audit_log_cloudtrail_destination}/AWSLogs/${var.aws_account_id}/*"],
-      local.is_master_account ? ["${local.audit_log_cloudtrail_destination}/AWSLogs/${data.aws_organizations_organization.org[0].id}/*"] : []
+      local.is_master_account ? ["${local.audit_log_cloudtrail_destination}/AWSLogs/${data.aws_organizations_organization.org[0].id}/*"] : [],
+      local.is_master_account ? [for account in var.member_accounts : "${local.audit_log_cloudtrail_destination}/AWSLogs/${account.account_id}/*"] : []
     )
     condition {
       test     = "StringEquals"
@@ -202,13 +212,56 @@ data "aws_iam_policy_document" "audit_log_config" {
   }
 }
 
+# Service linked role for AWSServiceRoleForBackupReports
+data "aws_iam_role" "backup_reports" {
+  count = local.use_external_bucket ? 0 : 1
+  
+  name = "AWSServiceRoleForBackupReports"
+}
+
+# Apply policies for AWS Backup report delivery based on AWS Backup Developer Guide.
+# https://docs.aws.amazon.com/aws-backup/latest/devguide/whatisbackup.html
+data "aws_iam_policy_document" "audit_log_backup_report" {
+  count = local.use_external_bucket ? 0 : 1
+
+  source_policy_documents = [data.aws_iam_policy_document.audit_log_config[0].json]
+
+  statement {
+    sid     = "AWSBackupAclCheck20150319"
+    actions = ["s3:GetBucketAcl"]
+    principals {
+      type        = "AWS"
+      identifiers = [data.aws_iam_role.backup_reports[0].arn]
+    }
+    resources = [module.audit_log_bucket[0].this_bucket.arn]
+  }
+
+  statement {
+    sid     = "AWSBackupWrite20150319"
+    actions = ["s3:PutObject"]
+    principals {
+      type        = "AWS"
+      identifiers = [data.aws_iam_role.backup_reports[0].arn]
+    }
+    # Include the management account and member accounts in the resource list
+    resources = ["${local.audit_log_backup_report_destination}/Backup/*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "s3:x-amz-acl"
+      values   = ["bucket-owner-full-control"]
+    }
+  }
+}
+
+
 # Apply policies for AWS Config log delivery based on Amazon Virtual Private Cloud User Guide.
 # This policy is necessary only when the log destination of VPC Flow Logs is set to S3.
 # https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-s3.html#flow-logs-s3-permissions
 data "aws_iam_policy_document" "audit_log_flow_logs" {
   count = !local.use_external_bucket && local.flow_logs_to_s3 ? 1 : 0
 
-  source_policy_documents = [data.aws_iam_policy_document.audit_log_config[0].json]
+  source_policy_documents = [data.aws_iam_policy_document.audit_log_backup_report[0].json]
 
   statement {
     sid     = "AWSLogDeliveryAclCheck"
@@ -243,7 +296,7 @@ data "aws_iam_policy_document" "audit_log_flow_logs" {
 data "aws_iam_policy_document" "audit_log" {
   count = local.use_external_bucket ? 0 : 1
 
-  source_policy_documents   = [local.flow_logs_to_s3 ? data.aws_iam_policy_document.audit_log_flow_logs[0].json : data.aws_iam_policy_document.audit_log_config[0].json]
+  source_policy_documents   = [local.flow_logs_to_s3 ? data.aws_iam_policy_document.audit_log_flow_logs[0].json : data.aws_iam_policy_document.audit_log_backup_report[0].json]
   override_policy_documents = [var.audit_log_bucket_custom_policy_json]
 }
 
@@ -253,3 +306,4 @@ resource "aws_s3_bucket_policy" "audit_log" {
   bucket = module.audit_log_bucket[0].this_bucket.id
   policy = data.aws_iam_policy_document.audit_log[0].json
 }
+

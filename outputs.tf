@@ -51,7 +51,7 @@ output "cloudtrail_log_group" {
 
 output "config_iam_role" {
   description = "The IAM role used for delivering AWS Config records to CloudWatch Logs."
-  value       = aws_iam_role.recorder
+  value       = aws_iam_service_linked_role.recorder.arn
 }
 
 output "config_configuration_recorder" {
@@ -74,6 +74,8 @@ output "config_configuration_recorder" {
     "us-east-2"      = one(module.config_baseline_us-east-2[*].configuration_recorder)
     "us-west-1"      = one(module.config_baseline_us-west-1[*].configuration_recorder)
     "us-west-2"      = one(module.config_baseline_us-west-2[*].configuration_recorder)
+    "il-central-1"   = one(module.config_baseline_il-central-1[*].configuration_recorder)
+    "me-central-1"   = one(module.config_baseline_me-central-1[*].configuration_recorder)
   }
 }
 
@@ -98,6 +100,8 @@ output "config_sns_topic" {
     "us-east-2"      = one(module.config_baseline_us-east-2[*].config_sns_topic)
     "us-west-1"      = one(module.config_baseline_us-west-1[*].config_sns_topic)
     "us-west-2"      = one(module.config_baseline_us-west-2[*].config_sns_topic)
+    "il-central-1"   = one(module.config_baseline_il-central-1[*].config_sns_topic)
+    "me-central-1"   = one(module.config_baseline_me-central-1[*].config_sns_topic)
   }
 }
 
@@ -125,6 +129,8 @@ output "guardduty_detector" {
     "us-east-2"      = one(module.guardduty_baseline_us-east-2[*].guardduty_detector)
     "us-west-1"      = one(module.guardduty_baseline_us-west-1[*].guardduty_detector)
     "us-west-2"      = one(module.guardduty_baseline_us-west-2[*].guardduty_detector)
+    "il-central-1"   = one(module.guardduty_baseline_il-central-1[*].guardduty_detector)
+    "me-central-1"   = one(module.guardduty_baseline_me-central-1[*].guardduty_detector)
   }
 }
 
@@ -167,6 +173,8 @@ output "vpc_flow_logs_group" {
     "us-east-2"      = one(module.vpc_baseline_us-east-2[*].vpc_flow_logs_group)
     "us-west-1"      = one(module.vpc_baseline_us-west-1[*].vpc_flow_logs_group)
     "us-west-2"      = one(module.vpc_baseline_us-west-2[*].vpc_flow_logs_group)
+    "il-central-1"   = one(module.vpc_baseline_il-central-1[*].vpc_flow_logs_group)
+    "me-central-1"   = one(module.vpc_baseline_me-central-1[*].vpc_flow_logs_group)
   } : null
 }
 
@@ -191,6 +199,7 @@ output "default_vpc" {
     "us-east-2"      = one(module.vpc_baseline_us-east-2[*].default_vpc)
     "us-west-1"      = one(module.vpc_baseline_us-west-1[*].default_vpc)
     "us-west-2"      = one(module.vpc_baseline_us-west-2[*].default_vpc)
+    "il-central-1"   = one(module.vpc_baseline_il-central-1[*].default_vpc)
   }
 }
 
@@ -215,6 +224,8 @@ output "default_security_group" {
     "us-east-2"      = one(module.vpc_baseline_us-east-2[*].default_security_group)
     "us-west-1"      = one(module.vpc_baseline_us-west-1[*].default_security_group)
     "us-west-2"      = one(module.vpc_baseline_us-west-2[*].default_security_group)
+    "il-central-1"   = one(module.vpc_baseline_il-central-1[*].default_security_group)
+    "me-central-1"   = one(module.vpc_baseline_me-central-1[*].default_security_group)
   }
 }
 
@@ -239,6 +250,8 @@ output "default_network_acl" {
     "us-east-2"      = one(module.vpc_baseline_us-east-2[*].default_network_acl)
     "us-west-1"      = one(module.vpc_baseline_us-west-1[*].default_network_acl)
     "us-west-2"      = one(module.vpc_baseline_us-west-2[*].default_network_acl)
+    "il-central-1"   = one(module.vpc_baseline_il-central-1[*].default_network_acl)
+    "me-central-1"   = one(module.vpc_baseline_me-central-1[*].default_network_acl)
   }
 }
 
@@ -263,6 +276,8 @@ output "default_route_table" {
     "us-east-2"      = one(module.vpc_baseline_us-east-2[*].default_route_table)
     "us-west-1"      = one(module.vpc_baseline_us-west-1[*].default_route_table)
     "us-west-2"      = one(module.vpc_baseline_us-west-2[*].default_route_table)
+    "il-central-1"   = one(module.vpc_baseline_il-central-1[*].default_route_table)
+    "me-central-1"   = one(module.vpc_baseline_me-central-1[*].default_route_table)
   }
 }
 

@@ -536,3 +536,287 @@ resource "aws_cloudwatch_metric_alarm" "organizations_changes" {
 
   tags = var.tags
 }
+
+# CloudWatch Log Insights Query Definitions for each metric filter
+resource "aws_cloudwatch_query_definition" "unauthorized_api_calls" {
+  count = var.unauthorized_api_calls_enabled ? 1 : 0
+
+  name = "CIS benchmark/UnauthorizedAPICallsQuery"
+  query_string = <<EOF
+fields @timestamp, @message, eventName, errorCode, sourceIPAddress, userIdentity.arn
+| filter (errorCode like /UnauthorizedOperation/ or errorCode like /AccessDenied/) 
+  and sourceIPAddress != 'delivery.logs.amazonaws.com' 
+  and eventName != 'HeadBucket'
+| sort @timestamp desc
+| limit 100
+EOF
+  log_group_names = [var.cloudtrail_log_group_name]
+}
+
+resource "aws_cloudwatch_query_definition" "no_mfa_console_signin" {
+  count = var.no_mfa_console_signin_enabled ? 1 : 0
+
+  name = "CIS benchmark/NoMFAConsoleSigninQuery"
+  query_string = <<EOF
+fields @timestamp, @message, eventName, userIdentity.type, additionalEventData.MFAUsed, responseElements.ConsoleLogin
+| filter eventName = 'ConsoleLogin' 
+  and additionalEventData.MFAUsed != 'Yes'
+  ${var.mfa_console_signin_allow_sso ? "and userIdentity.type = 'IAMUser' and responseElements.ConsoleLogin = 'Success'" : ""}
+| sort @timestamp desc
+| limit 100
+EOF
+  log_group_names = [var.cloudtrail_log_group_name]
+}
+
+resource "aws_cloudwatch_query_definition" "root_usage" {
+  count = var.root_usage_enabled ? 1 : 0
+
+  name = "CIS benchmark/RootUsageQuery"
+  query_string = <<EOF
+fields @timestamp, @message, eventName, userIdentity.type, userIdentity.principalId, sourceIPAddress
+| filter userIdentity.type = 'Root' 
+  and userIdentity.invokedBy NOT EXISTS 
+  and eventType != 'AwsServiceEvent'
+| sort @timestamp desc
+| limit 100
+EOF
+  log_group_names = [var.cloudtrail_log_group_name]
+}
+
+resource "aws_cloudwatch_query_definition" "iam_changes" {
+  count = var.iam_changes_enabled ? 1 : 0
+
+  name = "CIS benchmark/IAMChangesQuery"
+  query_string = <<EOF
+fields @timestamp, @message, eventName, userIdentity.arn, sourceIPAddress
+| filter (eventName = 'DeleteGroupPolicy' 
+  or eventName = 'DeleteRolePolicy' 
+  or eventName = 'DeleteUserPolicy' 
+  or eventName = 'PutGroupPolicy' 
+  or eventName = 'PutRolePolicy' 
+  or eventName = 'PutUserPolicy' 
+  or eventName = 'CreatePolicy' 
+  or eventName = 'DeletePolicy' 
+  or eventName = 'CreatePolicyVersion' 
+  or eventName = 'DeletePolicyVersion' 
+  or eventName = 'AttachRolePolicy' 
+  or eventName = 'DetachRolePolicy' 
+  or eventName = 'AttachUserPolicy' 
+  or eventName = 'DetachUserPolicy' 
+  or eventName = 'AttachGroupPolicy' 
+  or eventName = 'DetachGroupPolicy')
+| sort @timestamp desc
+| limit 100
+EOF
+  log_group_names = [var.cloudtrail_log_group_name]
+}
+
+resource "aws_cloudwatch_query_definition" "cloudtrail_cfg_changes" {
+  count = var.cloudtrail_cfg_changes_enabled ? 1 : 0
+
+  name = "CIS benchmark/CloudTrailCfgChangesQuery"
+  query_string = <<EOF
+fields @timestamp, @message, eventName, userIdentity.arn, sourceIPAddress
+| filter (eventName = 'CreateTrail' 
+  or eventName = 'UpdateTrail' 
+  or eventName = 'DeleteTrail' 
+  or eventName = 'StartLogging' 
+  or eventName = 'StopLogging')
+| sort @timestamp desc
+| limit 100
+EOF
+  log_group_names = [var.cloudtrail_log_group_name]
+}
+
+resource "aws_cloudwatch_query_definition" "console_signin_failures" {
+  count = var.console_signin_failures_enabled ? 1 : 0
+
+  name = "CIS benchmark/ConsoleSigninFailuresQuery"
+  query_string = <<EOF
+fields @timestamp, @message, eventName, userIdentity.arn, responseElements.ConsoleLogin, errorMessage
+| filter eventName = 'ConsoleLogin' 
+  and responseElements.ConsoleLogin = 'Failure'
+| sort @timestamp desc
+| limit 100
+EOF
+  log_group_names = [var.cloudtrail_log_group_name]
+}
+
+resource "aws_cloudwatch_query_definition" "disable_or_delete_cmk" {
+  count = var.disable_or_delete_cmk_enabled ? 1 : 0
+
+  name = "CIS benchmark/DisableOrDeleteCMKQuery"
+  query_string = <<EOF
+fields @timestamp, @message, eventName, userIdentity.arn, requestParameters.keyId
+| filter (eventName = 'DisableKey' 
+  or eventName = 'ScheduleKeyDeletion')
+| sort @timestamp desc
+| limit 100
+EOF
+  log_group_names = [var.cloudtrail_log_group_name]
+}
+
+resource "aws_cloudwatch_query_definition" "s3_bucket_policy_changes" {
+  count = var.s3_bucket_policy_changes_enabled ? 1 : 0
+
+  name = "CIS benchmark/S3BucketPolicyChangesQuery"
+  query_string = <<EOF
+fields @timestamp, @message, eventName, userIdentity.arn, userIdentity.sessionContext.sessionIssuer.userName, requestParameters.bucketName
+| filter (eventName = 'PutBucketAcl' 
+  or eventName = 'PutBucketPolicy' 
+  or eventName = 'PutBucketCors' 
+  or eventName = 'PutBucketLifecycle' 
+  or eventName = 'PutBucketReplication' 
+  or eventName = 'DeleteBucketPolicy' 
+  or eventName = 'DeleteBucketCors' 
+  or eventName = 'DeleteBucketLifecycle' 
+  or eventName = 'DeleteBucketReplication')
+| sort @timestamp desc
+| limit 100
+EOF
+  log_group_names = [var.cloudtrail_log_group_name]
+}
+
+resource "aws_cloudwatch_query_definition" "aws_config_changes" {
+  count = var.aws_config_changes_enabled ? 1 : 0
+
+  name = "CIS benchmark/AWSConfigChangesQuery"
+  query_string = <<EOF
+fields @timestamp, @message, eventName, userIdentity.arn, sourceIPAddress
+| filter (eventSource = 'config.amazonaws.com' 
+  and (eventName = 'StopConfigurationRecorder' 
+  or eventName = 'DeleteDeliveryChannel' 
+  or eventName = 'PutDeliveryChannel' 
+  or eventName = 'PutConfigurationRecorder'))
+| sort @timestamp desc
+| limit 100
+EOF
+  log_group_names = [var.cloudtrail_log_group_name]
+}
+
+resource "aws_cloudwatch_query_definition" "security_group_changes" {
+  count = var.security_group_changes_enabled ? 1 : 0
+
+  name = "CIS benchmark/SecurityGroupChangesQuery"
+  query_string = <<EOF
+fields @timestamp, @message, eventName, userIdentity.arn, requestParameters.groupId
+| filter (eventName = 'AuthorizeSecurityGroupIngress' 
+  or eventName = 'AuthorizeSecurityGroupEgress' 
+  or eventName = 'RevokeSecurityGroupIngress' 
+  or eventName = 'RevokeSecurityGroupEgress' 
+  or eventName = 'CreateSecurityGroup' 
+  or eventName = 'DeleteSecurityGroup')
+| sort @timestamp desc
+| limit 100
+EOF
+  log_group_names = [var.cloudtrail_log_group_name]
+}
+
+resource "aws_cloudwatch_query_definition" "nacl_changes" {
+  count = var.nacl_changes_enabled ? 1 : 0
+
+  name = "CIS benchmark/NACLChangesQuery"
+  query_string = <<EOF
+fields @timestamp, @message, eventName, userIdentity.arn, requestParameters.networkAclId
+| filter (eventName = 'CreateNetworkAcl' 
+  or eventName = 'CreateNetworkAclEntry' 
+  or eventName = 'DeleteNetworkAcl' 
+  or eventName = 'DeleteNetworkAclEntry' 
+  or eventName = 'ReplaceNetworkAclEntry' 
+  or eventName = 'ReplaceNetworkAclAssociation')
+| sort @timestamp desc
+| limit 100
+EOF
+  log_group_names = [var.cloudtrail_log_group_name]
+}
+
+resource "aws_cloudwatch_query_definition" "network_gw_changes" {
+  count = var.network_gw_changes_enabled ? 1 : 0
+
+  name = "CIS benchmark/NetworkGatewayChangesQuery"
+  query_string = <<EOF
+fields @timestamp, @message, eventName, userIdentity.arn, sourceIPAddress
+| filter (eventName = 'CreateCustomerGateway' 
+  or eventName = 'DeleteCustomerGateway' 
+  or eventName = 'AttachInternetGateway' 
+  or eventName = 'CreateInternetGateway' 
+  or eventName = 'DeleteInternetGateway' 
+  or eventName = 'DetachInternetGateway')
+| sort @timestamp desc
+| limit 100
+EOF
+  log_group_names = [var.cloudtrail_log_group_name]
+}
+
+resource "aws_cloudwatch_query_definition" "route_table_changes" {
+  count = var.route_table_changes_enabled ? 1 : 0
+
+  name = "CIS benchmark/RouteTableChangesQuery"
+  query_string = <<EOF
+fields @timestamp, @message, eventName, userIdentity.arn, requestParameters.routeTableId
+| filter (eventName = 'CreateRoute' 
+  or eventName = 'CreateRouteTable' 
+  or eventName = 'ReplaceRoute' 
+  or eventName = 'ReplaceRouteTableAssociation' 
+  or eventName = 'DeleteRouteTable' 
+  or eventName = 'DeleteRoute' 
+  or eventName = 'DisassociateRouteTable')
+| sort @timestamp desc
+| limit 100
+EOF
+  log_group_names = [var.cloudtrail_log_group_name]
+}
+
+resource "aws_cloudwatch_query_definition" "vpc_changes" {
+  count = var.vpc_changes_enabled ? 1 : 0
+
+  name = "CIS benchmark/VPCChangesQuery"
+  query_string = <<EOF
+fields @timestamp, @message, eventName, userIdentity.arn, requestParameters.vpcId
+| filter (eventName = 'CreateVpc' 
+  or eventName = 'DeleteVpc' 
+  or eventName = 'ModifyVpcAttribute' 
+  or eventName = 'AcceptVpcPeeringConnection' 
+  or eventName = 'CreateVpcPeeringConnection' 
+  or eventName = 'DeleteVpcPeeringConnection' 
+  or eventName = 'RejectVpcPeeringConnection' 
+  or eventName = 'AttachClassicLinkVpc' 
+  or eventName = 'DetachClassicLinkVpc' 
+  or eventName = 'DisableVpcClassicLink' 
+  or eventName = 'EnableVpcClassicLink')
+| sort @timestamp desc
+| limit 100
+EOF
+  log_group_names = [var.cloudtrail_log_group_name]
+}
+
+resource "aws_cloudwatch_query_definition" "organizations_changes" {
+  count = var.organizations_changes_enabled ? 1 : 0
+
+  name = "CIS benchmark/OrganizationsChangesQuery"
+  query_string = <<EOF
+fields @timestamp, @message, eventName, userIdentity.arn, sourceIPAddress
+| filter (eventSource = 'organizations.amazonaws.com' 
+  and (eventName = 'AcceptHandshake' 
+  or eventName = 'AttachPolicy' 
+  or eventName = 'CreateAccount' 
+  or eventName = 'CreateOrganizationalUnit' 
+  or eventName = 'CreatePolicy' 
+  or eventName = 'DeclineHandshake' 
+  or eventName = 'DeleteOrganization' 
+  or eventName = 'DeleteOrganizationalUnit' 
+  or eventName = 'DeletePolicy' 
+  or eventName = 'DetachPolicy' 
+  or eventName = 'DisablePolicyType' 
+  or eventName = 'EnablePolicyType' 
+  or eventName = 'InviteAccountToOrganization' 
+  or eventName = 'LeaveOrganization' 
+  or eventName = 'MoveAccount' 
+  or eventName = 'RemoveAccountFromOrganization' 
+  or eventName = 'UpdatePolicy' 
+  or eventName = 'UpdateOrganizationalUnit'))
+| sort @timestamp desc
+| limit 100
+EOF
+  log_group_names = [var.cloudtrail_log_group_name]
+}
