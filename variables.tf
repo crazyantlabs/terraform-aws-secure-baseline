@@ -708,3 +708,24 @@ variable "backup_regions" {
   default     = []
 }
 
+# --------------------------------------------------------------------------------------------------
+# Variables for cloudwatch-central-monitoring-baseline module.
+# --------------------------------------------------------------------------------------------------
+
+variable "cloudwatch_central_monitoring_baseline_enabled" {
+  description = "Boolean whether CloudWatch Central Monitoring baseline is enabled."
+  type        = bool
+  default     = true
+}
+
+variable "cloudwatch_central_monitoring_resource_types" {
+  description = "The resource types to enable central monitoring for."
+  type        = list(string)
+  default     = ["AWS::CloudWatch::Metric", "AWS::Logs::LogGroup"]
+}
+
+variable "cloudwatch_central_monitoring_sink_arn" {
+  description = "A map of region to the monitoring data sink ARN. Only used for source accounts."
+  type = map(string)
+  default = {}
+}

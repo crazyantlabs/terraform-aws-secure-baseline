@@ -33,6 +33,7 @@ locals {
   is_master_account     = var.account_type == "master"
   is_cloudtrail_enabled = var.cloudtrail_baseline_enabled && (local.is_individual_account || local.is_master_account)
   is_organization_trail = local.is_master_account && !var.turn_off_organization_trail
+  is_cloudwatch_central_monitoring_enabled = var.cloudwatch_central_monitoring_baseline_enabled && (local.is_individual_account || local.is_master_account)
 }
 
 # --------------------------------------------------------------------------------------------------
