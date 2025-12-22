@@ -23,6 +23,7 @@ resource "aws_cloudwatch_log_group" "default_vpc_flow_logs" {
 
   name              = var.flow_logs_log_group_name
   retention_in_days = var.flow_logs_retention_in_days
+  log_group_class   = var.flow_logs_log_group_class
 
   tags = var.tags
 }

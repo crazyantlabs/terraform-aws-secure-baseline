@@ -32,6 +32,16 @@ variable "flow_logs_retention_in_days" {
   default     = 365
 }
 
+variable "flow_logs_log_group_class" {
+  description = "The class of the CloudWatch Logs log group. Valid values: INFREQUENT_ACCESS, STANDARD"
+  type        = string
+  default     = "INFREQUENT_ACCESS"
+  validation {
+    condition     = contains(["INFREQUENT_ACCESS", "STANDARD"], var.flow_logs_log_group_class)
+    error_message = "Invalid value for flow_logs_log_group_class. Valid values are: INFREQUENT_ACCESS, STANDARD."
+  }
+}
+
 # --------------------------------------------------------------------------------------------------
 # Variables for S3 logging.
 # --------------------------------------------------------------------------------------------------
