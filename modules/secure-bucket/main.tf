@@ -45,6 +45,9 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "access_log" {
   bucket = aws_s3_bucket.access_log.id
 
   rule {
+    # Keep SSE-C blocked (ransomware protection)
+    blocked_encryption_types = ["SSE-C"]
+
     apply_server_side_encryption_by_default {
       sse_algorithm = "AES256"
     }
