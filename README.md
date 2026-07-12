@@ -52,7 +52,7 @@ module "secure_baseline" {
 
   audit_log_bucket_name           = "YOUR_BUCKET_NAME"
   aws_account_id                  = data.aws_caller_identity.current.account_id
-  region                          = data.aws_region.current.name
+  region                          = data.aws_region.current.region
   support_iam_role_principal_arns = ["YOUR_IAM_USER"]
 
   providers = {
