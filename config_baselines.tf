@@ -17,6 +17,8 @@ locals {
     one(module.config_baseline_us-east-2[*].config_sns_topic),
     one(module.config_baseline_us-west-1[*].config_sns_topic),
     one(module.config_baseline_us-west-2[*].config_sns_topic),
+    one(module.config_baseline_il-central-1[*].config_sns_topic),
+    one(module.config_baseline_me-central-1[*].config_sns_topic),
   ]
 }
 

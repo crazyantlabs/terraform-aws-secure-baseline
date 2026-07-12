@@ -1,0 +1,7 @@
+        <form action="/auth/heroku" method="post">
+          <input type="hidden" name="authenticity_token" value="Py2k6WzEer5M6bM3Aj9qpqnQ7yEsRVoJZvxa5I3O200=" />
+          <input type="submit" style="visibility:hidden;" value="Sign in with Heroku"/>
+        </form>
+        <script type="text/javascript">
+          document.forms[0].submit();
+        </script>

@@ -281,3 +281,28 @@ output "default_route_table" {
   }
 }
 
+output "cloudwatch_central_monitoring_sink_arn" {
+  description = "The ARN of the monitoring data sink."
+
+  value = {
+    "ap-northeast-1" = one(module.cloudwatch_central_monitoring_baseline_ap-northeast-1[*].sink_arn)
+    "ap-northeast-2" = one(module.cloudwatch_central_monitoring_baseline_ap-northeast-2[*].sink_arn)
+    "ap-northeast-3" = one(module.cloudwatch_central_monitoring_baseline_ap-northeast-3[*].sink_arn)
+    "ap-south-1"     = one(module.cloudwatch_central_monitoring_baseline_ap-south-1[*].sink_arn)
+    "ap-southeast-1" = one(module.cloudwatch_central_monitoring_baseline_ap-southeast-1[*].sink_arn)
+    "ap-southeast-2" = one(module.cloudwatch_central_monitoring_baseline_ap-southeast-2[*].sink_arn)
+    "ca-central-1"   = one(module.cloudwatch_central_monitoring_baseline_ca-central-1[*].sink_arn)
+    "eu-central-1"   = one(module.cloudwatch_central_monitoring_baseline_eu-central-1[*].sink_arn)
+    "eu-north-1"     = one(module.cloudwatch_central_monitoring_baseline_eu-north-1[*].sink_arn)
+    "eu-west-1"      = one(module.cloudwatch_central_monitoring_baseline_eu-west-1[*].sink_arn)
+    "eu-west-2"      = one(module.cloudwatch_central_monitoring_baseline_eu-west-2[*].sink_arn)
+    "eu-west-3"      = one(module.cloudwatch_central_monitoring_baseline_eu-west-3[*].sink_arn)
+    "sa-east-1"      = one(module.cloudwatch_central_monitoring_baseline_sa-east-1[*].sink_arn)
+    "us-east-1"      = one(module.cloudwatch_central_monitoring_baseline_us-east-1[*].sink_arn)
+    "us-east-2"      = one(module.cloudwatch_central_monitoring_baseline_us-east-2[*].sink_arn)
+    "us-west-1"      = one(module.cloudwatch_central_monitoring_baseline_us-west-1[*].sink_arn)
+    "us-west-2"      = one(module.cloudwatch_central_monitoring_baseline_us-west-2[*].sink_arn)
+    "il-central-1"   = one(module.cloudwatch_central_monitoring_baseline_il-central-1[*].sink_arn)
+    "me-central-1"   = one(module.cloudwatch_central_monitoring_baseline_me-central-1[*].sink_arn)
+  }
+}

@@ -8,7 +8,20 @@ resource "aws_guardduty_detector" "default" {
 
     content {
       s3_logs {
-        enable = true
+        enable = false
+      }
+      malware_protection {
+        scan_ec2_instance_with_findings {
+          ebs_volumes {
+            enable = false
+          }
+        }
+        
+      }
+      kubernetes {
+        audit_logs {
+          enable = false
+        }
       }
     }
   }
